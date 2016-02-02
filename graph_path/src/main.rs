@@ -93,6 +93,7 @@ fn main() {
     //argument sanity check
     if env::args().count() != 2usize {
         println!("\nuseage: cargo run graph.dat\n");
+        return;
     }
 
     //open the graph description file
@@ -106,40 +107,77 @@ fn main() {
 
     //read the graph description file and build the graph data structure
     let mut graph = read_graph(f);
-    for n in graph.nodes.iter() {
-        println!("{}", n);
-    }
+//    for n in &graph.nodes {
+//        println!("{}", n);
+//    }
 
     let mut lines = BufReader::new(stdin()).lines();
     while let Some(Ok(line)) = lines.next() {
         let mut nodes = line.split(" ");
         let from_node = nodes.next().unwrap();
         let to_node   = nodes.next().unwrap();
-        println!("from {} to {}", from_node, to_node);
+//        println!("from {} to {}", from_node, to_node);
        
         type Queue = std::collections::LinkedList<usize>;
         let mut fifo = Queue::new();
-        fifo.push_back(match graph.name_table.get(from_node) {
+        let from_node_id = match graph.name_table.get(from_node) {
+                            Some(n) => *n,
+                            None    => {
+                                println!("Invalid Node Name!");
+                                return;
+                                }
+                            };
+        fifo.push_back(from_node_id);
+        graph.nodes[from_node_id].distance = 0;
+        graph.nodes[from_node_id].visited = true;
+
+        // Do breadth first search
+        while !fifo.is_empty() {
+            let current_node = fifo.pop_front().unwrap();
+            graph.nodes[current_node].visited = true;
+            for neighbour in graph.nodes[current_node].neighbours.clone() {
+                if graph.nodes[neighbour].visited {
+                    continue;
+                } else {
+                    if graph.nodes[neighbour].distance >
+                        graph.nodes[current_node].distance + 1 {
+                        graph.nodes[neighbour].parent = current_node;
+                        graph.nodes[neighbour].distance = 
+                            graph.nodes[current_node].distance + 1;
+                    }
+                    fifo.push_back(neighbour);
+                }
+            }
+        }
+
+        // Trace back from the destnation node
+        let mut node_id = match graph.name_table.get(to_node) {
                             Some(n) => *n,
                             None    => {
                                 println!("Invalid Node Name!");
                                 return;
                             }
-                       });
-        while !fifo.is_empty() {
-            let current_node = fifo.pop_front().unwrap();
-            graph.nodes[current_node].visited = true;
-            for neighbour in &graph.nodes[current_node].neighbours {
-                if !graph.nodes[*neighbour].visited {
-                    continue;
-                } else {
-                    graph.nodes[*neighbour].visited = true;
-                    graph.nodes[*neighbour].parent = current_node;
-                    graph.nodes[*neighbour].distance = 
-                        graph.nodes[current_node].distance + 1;
-                    fifo.push_back(*neighbour);
-                }
-            }
+                      };
+        let mut path = Vec::new();
+        while node_id != from_node_id {
+            path.push(node_id);
+            node_id = graph.nodes[node_id].parent;
+        }
+        path.push(node_id);
+
+        // Print the result
+        let mut output = String::new();
+        while let Some(n) = path.pop() {
+            output.push_str(&graph.nodes[n].name);
+            output.push(' ');
+        }
+        println!("{}", output);
+
+        // Reset the graph data structure
+        for n in &mut graph.nodes {
+            n.distance = usize::max_value(); 
+            n.visited = false;
+            n.parent = usize::max_value();
         }
     }
 }
