@@ -11,6 +11,13 @@
 /// appear only once in the file.
 /// 3. If there are more than one path between the nodes, choose the shortest one.
 /// 4. The user query should follow the format `node1 node2`, else this program may panic.
+///
+/// # Algorithms
+/// We use Breadth First Search in this homework, which will output the shortest path between two
+/// nodes. However, as any path between two nodes are valid results, it is not necessary to use
+/// BFS. Using DFS, which stops when there is a vaild path is founded will make the program run a
+/// little bit faster. But there is no significant efficiency differences between them, the time
+/// complexity are both O(v+e).
 
 
 use std::io::{stdin, Read, BufReader, BufRead};
