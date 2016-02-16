@@ -35,11 +35,18 @@ fn handle_client(mut stream: TcpStream) {
         println!("{}", e);
         return;
     }
+
     // skip the header and body lines
-    //let mut discard_data = String::new();
-    //while let Ok(size) = read_buf.read_line(&mut discard_data) {
-    //    continue;
-    //}
+    let mut discard_data = String::new();
+    while let Ok(size) = read_buf.read_line(&mut discard_data) {
+        if size == 0 {
+            return;
+        }
+        if discard_data == "\r\n" {
+            break;
+        }
+    }
+
     // get the command fields
     let fields: Vec<&str> = command_line.split(' ').collect();
 
