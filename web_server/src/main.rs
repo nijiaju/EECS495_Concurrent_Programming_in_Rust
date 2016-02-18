@@ -111,10 +111,10 @@ fn make_response_header(status_code: &str, length: &str, is_html: bool)
     let status: &str;
 
     match status_code {
-        "200"   => status = " OK",
-        "400"   => status = " Bad Request",
-        "403"   => status = " Forbidden",
-        "404"   => status = " Not Found",
+        "200"   => status = "OK",
+        "400"   => status = "Bad Request",
+        "403"   => status = "Forbidden",
+        "404"   => status = "Not Found",
         _       => return None,
     }
     
@@ -146,6 +146,102 @@ fn make_response_header(status_code: &str, length: &str, is_html: bool)
     }
     return Some(format!("HTTP/1.0 {} {}\n{}\n{}\n{}\r\n", 
                         status_code, status, server, content_type, content_length));
+}
+
+#[cfg(test)]
+mod sys_test {
+    use super::{run_server};
+    use std::net::TcpStream;
+    use std::io::{Read, Write};
+    use std::thread;
+    use std::time::Duration;
+
+    fn http_test_client(ip_addr: &str, port: &str, command: String) -> String {
+        let mut response = String::new();
+        let sock_addr = format!("{}:{}", ip_addr, port);
+        let sd: &str = &sock_addr;
+        let mut stream = match TcpStream::connect(sd) {
+            Ok(s)   => s,
+            Err(e)  => {
+                println!("connect failed: {}", e);
+                return response;
+            }
+        };
+        if let Err(e) = stream.write(command.as_bytes()) {
+            println!("test error: {}", e);
+        }
+        if let Err(e) = stream.read_to_string(&mut response) {
+            println!("test error: {}", e);
+        }
+        return response;
+    }
+
+    // a more decent way is to run this initialize before all tests
+    // but I donnot know how to do that
+    //fn start_server() {
+    //    run_server("127.0.0.1", "8080");
+    //}
+
+    #[test]
+    fn bad_request() {
+        thread::spawn(move || {
+            run_server("127.0.0.1", "8080") 
+        });
+        // wait the server start
+        thread::sleep(Duration::new(1, 0));
+        let command = "REQUEST /path HTTP\n\r\n".to_owned();
+        let actual_response = http_test_client("127.0.0.1", "8080", command);
+        let expected_response = "HTTP/1.0 400 Bad Request\n\
+                                 Server: jns756-web-server/0.0.2\n\
+                                 Content-type: text/plain\n\
+                                 Content-Length: 0\r\n".to_owned();
+        assert_eq!(actual_response, expected_response);
+    }
+    
+    #[test]
+    fn get_plain() {
+        thread::spawn(move || {
+            run_server("127.0.0.1", "8081") 
+        });
+        thread::sleep(Duration::new(1, 0));
+        let command = "GET src/test.txt HTTP\n\r\n".to_owned();
+        let actual_response = http_test_client("127.0.0.1", "8081", command);
+        let expected_response = "HTTP/1.0 200 OK\n\
+                                 Server: jns756-web-server/0.0.2\n\
+                                 Content-type: text/plain\n\
+                                 Content-Length: 4\r\n\ntest".to_owned();
+        assert_eq!(actual_response, expected_response);
+    }
+
+    #[test]
+    fn not_found() {
+        thread::spawn(move || {
+            run_server("127.0.0.1", "8082") 
+        });
+        thread::sleep(Duration::new(1, 0));
+        let command = "GET src/nothere.txt HTTP\n\r\n".to_owned();
+        let actual_response = http_test_client("127.0.0.1", "8082", command);
+        let expected_response = "HTTP/1.0 404 Not Found\n\
+                                 Server: jns756-web-server/0.0.2\n\
+                                 Content-type: text/plain\n\
+                                 Content-Length: 0\r\n".to_owned();
+        assert_eq!(actual_response, expected_response);
+    }
+
+    #[test]
+    fn get_html() {
+        thread::spawn(move || {
+            run_server("127.0.0.1", "8083") 
+        });
+        thread::sleep(Duration::new(1, 0));
+        let command = "GET src/test.html HTTP\n\r\n".to_owned();
+        let actual_response = http_test_client("127.0.0.1", "8083", command);
+        let expected_response = "HTTP/1.0 200 OK\n\
+                                 Server: jns756-web-server/0.0.2\n\
+                                 Content-type: text/html\n\
+                                 Content-Length: 5\r\n\ntest\n".to_owned();
+        assert_eq!(actual_response, expected_response);
+    }
 }
 
 fn main() {
