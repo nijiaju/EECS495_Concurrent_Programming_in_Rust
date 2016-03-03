@@ -21,8 +21,8 @@ impl Cluster {
                 }
            }
 
-    pub fn fips_codes(&self) -> Vec<u64> {
-        self.fips_codes
+    pub fn fips_codes(&self) -> &Vec<u64> {
+        &self.fips_codes
     }
 
     pub fn horiz_center(&self) -> f64 {
@@ -43,13 +43,30 @@ impl Cluster {
 
     pub fn distance(&self, other_cluster: &Cluster) -> f64 {
         // Compute the Euclidean distance between two clusters
-        let vert_dist = self.vert_center - other_cluster.vert_center();
-        let horiz_dist = self.horiz_center - other_cluster.horiz_center();
+        let vert_dist = self.vert_center - other_cluster.vert_center;
+        let horiz_dist = self.horiz_center - other_cluster.horiz_center;
         (vert_dist * vert_dist + horiz_dist * horiz_dist).sqrt()
     }
     
     // take the owenership of the other_cluster
     pub fn merge_clusters(&mut self, other_cluster: Cluster) {
+        if other_cluster.fips_codes.len() == 0 {
+            return;
+        } else {
+            self.fips_codes.append(&mut other_cluster.fips_codes.clone());
+            let mut self_weight = self.total_population as f64;
+            let mut other_weight = other_cluster.total_population() as f64;
+            self.total_population += other_cluster.total_population();
+            self_weight /= self.total_population as f64;
+            other_weight /= self.total_population as f64;
+
+            self.vert_center = self_weight * self.vert_center
+                               + other_weight * other_cluster.vert_center();
+            self.horiz_center = self_weight * self.horiz_center
+                                + other_weight * other_cluster.horiz_center();
+            self.averaged_risk = self_weight * self.averaged_risk
+                                 + other_weight * other_cluster.averaged_risk();
+        }
     }
 
 }
@@ -57,7 +74,7 @@ impl Cluster {
 impl fmt::Display for Cluster {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut codes = String::new();
-        for &code in &self.fips_codes {
+        for code in &self.fips_codes {
             codes.push_str(&code.to_string());
         }
         write!(f, "cluster: {}\ncenter: ({}, {})\n",
