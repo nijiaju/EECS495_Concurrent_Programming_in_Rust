@@ -1,6 +1,7 @@
 use std::fmt;
+use std::cmp::Ordering;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Cluster {
     fips_codes:         Vec<u64>,
     horiz_center:       f64,
@@ -12,7 +13,7 @@ pub struct Cluster {
 impl Cluster {
     pub fn new(fips: u64, horiz: f64, vert: f64, population: u64, risk: f64)
            -> Self {
-                Cluster {
+               Cluster {
                    fips_codes:          vec![fips],
                    horiz_center:        horiz,
                    vert_center:         vert,
@@ -39,6 +40,30 @@ impl Cluster {
 
     pub fn averaged_risk(&self) -> f64 {
         self.averaged_risk
+    }
+
+    pub fn cmp_x(&self, other_cluster: &Self) -> Ordering {
+
+        if (self.horiz_center < other_cluster.horiz_center()) {
+            Ordering::Less
+        } else if (self.horiz_center == other_cluster.horiz_center()) {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
+
+        // f64 do not have trait Ord
+        //self.horiz_center.cmp(other_cluster.horiz_center())
+    }
+
+    pub fn cmp_y(&self, other_cluster: &Self) -> Ordering {
+        if (self.vert_center < other_cluster.vert_center()) {
+            Ordering::Less
+        } else if (self.vert_center == other_cluster.vert_center()) {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
     }
 
     pub fn distance(&self, other_cluster: &Cluster) -> f64 {
@@ -81,4 +106,3 @@ impl fmt::Display for Cluster {
                codes, self.horiz_center, self.vert_center)
     }
 }
-

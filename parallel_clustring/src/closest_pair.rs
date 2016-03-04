@@ -1,5 +1,6 @@
 use cluster::Cluster;
 use std::{cmp, f64};
+use std::thread;
 
 fn pair_distance(cluster_list: &Vec<Cluster>, index1: usize, index2: usize)
    -> (f64, usize, usize) {
@@ -7,7 +8,11 @@ fn pair_distance(cluster_list: &Vec<Cluster>, index1: usize, index2: usize)
      cmp::min(index1, index2), cmp::max(index1, index2))
 }
 
-pub fn bf_closest_pair(cluster_list: &Vec<Cluster>) -> (f64, usize, usize) {
+pub fn bf_closest_pair(cluster_list: &Vec<Cluster>) -> Option<(f64, usize, usize)> {
+    if cluster_list.len() < 2 {
+        return None;
+    }
+
     let mut min_distance = (f64::INFINITY, usize::max_value(), usize::max_value());
 
     for i in 0 .. cluster_list.len() {
@@ -19,10 +24,93 @@ pub fn bf_closest_pair(cluster_list: &Vec<Cluster>) -> (f64, usize, usize) {
         }
     }
 
-    min_distance
+    Some(min_distance)
 }
 
-pub fn paral_closest_pair(cluster_list: &Vec<Cluster>) -> (f64, usize, usize) {
+pub fn paral_closest_pair(cluster_list: &Vec<Cluster>)
+       -> Option<(f64, usize, usize)> {
+    
+    let mut cluster_list_sorted_x = cluster_list.clone();
+    cluster_list_sorted_x.sort_by(|a, b| a.cmp_x(b));
+    let mut cluster_list_sorted_y = cluster_list.clone();
+    cluster_list_sorted_y.sort_by(|a, b| a.cmp_y(b));
+
+    paral_closest_pair_helper(&cluster_list_sorted_x, &cluster_list_sorted_y)
+}
+
+fn paral_closest_pair_helper(cluster_list_x: &Vec<Cluster>,
+                             cluster_list_y: &Vec<Cluster>)
+   -> Option<(f64, usize, usize)> {
+
+    // base case
+    if cluster_list_x.len() <= 3 {
+        return bf_closest_pair(cluster_list_x);
+    }
+
+    let m: usize = cluster_list_x.len() / 2;
+    let mid: f64 = (cluster_list_x[m - 1].horiz_center() + 
+                    cluster_list_x[m].horiz_center()) / 2 as f64;
+
+    // prepare data for sub problems
+    // TODO: eliminate the clone
+    let mut left_h = Vec::new();
+    let mut left_v = Vec::new();
+    let mut right_h = Vec::new();
+    let mut right_v = Vec::new();
+
+    for c in cluster_list_x {
+        if c.horiz_center() < mid {
+            left_h.push(c.clone());
+        } else {
+            right_h.push(c.clone());
+        }
+    }
+    for c in cluster_list_y {
+        if c.horiz_center() < mid {
+            left_v.push(c.clone());
+        } else {
+            right_v.push(c.clone());
+        }
+    }
+
+    // spwan a thread to solve the sub-problem independently
+    let right_handle = thread::spawn(move || {
+        paral_closest_pair_helper(&right_h, &right_v)
+    });
+
+    let left_distance = paral_closest_pair_helper(&left_h, &left_v).unwrap();
+    let right_distance = right_handle.join().unwrap().unwrap();
+    
+    // find the min distance from left and right
+    let mut min_distance;
+    if left_distance.0 < right_distance.0 {
+        min_distance = left_distance;
+    } else {
+        min_distance = right_distance;
+    }
+    
+    // find the points in the strip
+    let mut s = Vec::new();
+    for c in cluster_list_y {
+        if (c.horiz_center() - mid).abs() < min_distance.0 {
+            s.push(c.clone());
+        }
+    }
+
+    // find the minmum distance
+    let k = s.len();
+    if k > 2 {
+        for u in 0 .. k - 2 {
+            for v in u + 1 .. cmp::min(u + 3, k - 1) {
+                let distance = s[u].distance(&s[v]);
+                if distance < min_distance.0 {
+                    min_distance = (distance, 0, 0);
+                }
+            }
+        }
+    }
+
+    Some(min_distance)
 }
 
 #[cfg(test)]

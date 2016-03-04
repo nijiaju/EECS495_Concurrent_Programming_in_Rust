@@ -1,3 +1,5 @@
+extern crate time;
+
 mod cluster;
 mod closest_pair;
 mod clustering;
@@ -10,8 +12,20 @@ fn main() {
     //let mut cluster_list = read_cluster_list("../unifiedCancerData_24.csv".to_owned());
     let mut cluster_list = read_cluster_list("../unifiedCancerData_3108.csv".to_owned());
     println!("read data length: {}", cluster_list.len());
-    let min_distance = closest_pair::bf_closest_pair(&cluster_list);
-    println!("min distance: {:?}", min_distance);
+    {
+        let start_time = time::now();
+        let min_distance1 = closest_pair::bf_closest_pair(&cluster_list);
+        let stop_time = time::now();
+        println!("min distance1: {:?}", min_distance1);
+        println!("{}", stop_time - start_time);
+    }
+    {
+        let start_time = time::now();
+        let min_distance2 = closest_pair::paral_closest_pair(&mut cluster_list);
+        let stop_time = time::now();
+        println!("min distance2: {:?}", min_distance2);
+        println!("{}", stop_time - start_time);
+    }
 }
 
 fn read_cluster_list(file_name: String) -> Vec<Cluster> {
