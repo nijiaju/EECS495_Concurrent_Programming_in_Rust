@@ -81,3 +81,4 @@ impl fmt::Display for Cluster {
                codes, self.horiz_center, self.vert_center)
     }
 }
+
