@@ -7,7 +7,7 @@ fn pair_distance(cluster_list: &Vec<Cluster>, index1: usize, index2: usize)
      cmp::min(index1, index2), cmp::max(index1, index2))
 }
 
-fn bf_closest_pair(cluster_list: &Vec<Cluster>) -> (f64, usize, usize) {
+pub fn bf_closest_pair(cluster_list: &Vec<Cluster>) -> (f64, usize, usize) {
     let mut min_distance = (f64::INFINITY, usize::max_value(), usize::max_value());
 
     for i in 0 .. cluster_list.len() {
@@ -22,6 +22,9 @@ fn bf_closest_pair(cluster_list: &Vec<Cluster>) -> (f64, usize, usize) {
     min_distance
 }
 
+pub fn paral_closest_pair(cluster_list: &Vec<Cluster>) -> (f64, usize, usize) {
+}
+
 #[cfg(test)]
 mod closest_pair_test {
     use super::bf_closest_pair;
@@ -32,17 +35,23 @@ mod closest_pair_test {
     fn read_cluster_list(file_name: String) -> Vec<Cluster> {
         let f = File::open(file_name).unwrap(); 
         let mut lines = BufReader::new(f).lines();
-        let result: Vec<Cluster> = Vec::new();
+        let mut result: Vec<Cluster> = Vec::new();
 
         while let Some(Ok(line)) = lines.next() {
             let mut split = line.split(", ");
-            println!("{}", split.next().unwrap());
+            let cluster = Cluster::new(split.next().unwrap().parse::<u64>().unwrap(),
+                                       split.next().unwrap().parse::<f64>().unwrap(),
+                                       split.next().unwrap().parse::<f64>().unwrap(),
+                                       split.next().unwrap().parse::<u64>().unwrap(),
+                                       split.next().unwrap().parse::<f64>().unwrap());
+            result.push(cluster);
         }
         return result;
-    }
+    }   
 
     #[test]
     fn bf_closeset_pair_1() {
-        read_cluster_list("unifiedCancerData_24.csv".to_owned());
+        let mut cluster_list = read_cluster_list("unifiedCancerData_24.csv".to_owned());
+        let min_distance = bf_closest_pair(cluster_list);
     }
 }
