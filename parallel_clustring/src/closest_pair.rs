@@ -1,8 +1,10 @@
 extern crate time;
 
 use cluster::Cluster;
+use sort::merge_sort;
 use std::{cmp, f64};
 use std::thread;
+use std::sync::Arc;
 
 fn pair_distance(cluster_list: &Vec<Cluster>, index1: usize, index2: usize)
    -> (f64, usize, usize) {
@@ -43,67 +45,76 @@ fn closest_pair(cluster_list: &Vec<Cluster>, in_parallel: bool)
     -> Option<(f64, usize, usize)> {
 
 //    let start_time = time::now();
-    let mut cluster_list_sorted_x = cluster_list.clone();
-    cluster_list_sorted_x.sort_by(|a, b| a.cmp_x(b));
-    let mut cluster_list_sorted_y = cluster_list.clone();
-    cluster_list_sorted_y.sort_by(|a, b| a.cmp_y(b));
+//    let mut cluster_list_sorted_x = cluster_list.clone();
+//    cluster_list_sorted_x.sort_by(|a, b| a.cmp_x(b));
+//    let mut cluster_list_sorted_y = cluster_list.clone();
+//    cluster_list_sorted_y.sort_by(|a, b| a.cmp_y(b));
 //    let end_time = time::now();
 //    println!("sort_time_cost: {}", end_time - start_time);
-
-    closest_pair_helper(&cluster_list_sorted_x, &cluster_list_sorted_y, in_parallel)
+    
+    let start_time = time::now();
+    let cluster_list_index_h = merge_sort(cluster_list, true);
+    let cluster_list_index_v = merge_sort(cluster_list, false);
+    let end_time = time::now();
+    println!("sort_time_cost: {}", end_time - start_time);
+    
+    closest_pair_helper(cluster_list,
+                        &cluster_list_index_h,
+                        &cluster_list_index_v,
+                        in_parallel)
 }
 
-fn closest_pair_helper(cluster_list_x: &Vec<Cluster>,
-                       cluster_list_y: &Vec<Cluster>,
+fn closest_pair_helper(cluster_list: &Vec<Cluster>,
+                       cluster_list_index_x: &Vec<usize>,
+                       cluster_list_index_y: &Vec<usize>,
                        in_parallel: bool)
     -> Option<(f64, usize, usize)> {
 
     // base case
-    if cluster_list_x.len() <= 3 {
-        return bf_closest_pair(cluster_list_x);
+    if cluster_list_index_x.len() <= 3 {
+        return bf_closest_pair(cluster_list);
     }
 
-    let m: usize = cluster_list_x.len() / 2;
-    let mid: f64 = (cluster_list_x[m - 1].horiz_center() + 
-                    cluster_list_x[m].horiz_center()) / 2 as f64;
+    let m: usize = cluster_list_index_x.len() / 2;
+    let mid: f64 = (cluster_list[cluster_list_index_x[m - 1]].horiz_center() + 
+                    cluster_list[cluster_list_index_x[m]].horiz_center()) / 2 as f64;
 
     // prepare data for sub problems
-    // TODO: eliminate the clone
-    let mut left_h = Vec::new();
-    let mut left_v = Vec::new();
-    let mut right_h = Vec::new();
-    let mut right_v = Vec::new();
+    let mut left_index_h = Vec::new();
+    let mut left_index_v = Vec::new();
+    let mut right_index_h = Vec::new();
+    let mut right_index_v = Vec::new();
     
-    for c in cluster_list_x {
-        if c.horiz_center() < mid {
-            left_h.push(c.clone());
+    for &i in cluster_list_index_x {
+        if cluster_list[i].horiz_center() < mid {
+            left_index_h.push(i);
         } else {
-            right_h.push(c.clone());
+            right_index_h.push(i);
         }
     }
-    for c in cluster_list_y {
-        if c.horiz_center() < mid {
-            left_v.push(c.clone());
+    for &i in cluster_list_index_y {
+        if cluster_list[i].horiz_center() < mid {
+            left_index_v.push(i);
         } else {
-            right_v.push(c.clone());
+            right_index_v.push(i);
         }
     }
 
     let left_distance;
     let right_distance;
 
-    if in_parallel && right_h.len() > 256 {
+//    if in_parallel && right_index_h.len() > 256 {
         // spwan a thread to solve the sub-problem independently
-        let right_handle = thread::spawn(move || {
-            closest_pair_helper(&right_h, &right_v, in_parallel)
-        });
+//        let right_handle = thread::spawn(move || {
+//            closest_pair_helper(cluster_list, &right_index_h, &right_index_v, in_parallel)
+//        });
 
-        left_distance = closest_pair_helper(&left_h, &left_v, in_parallel).unwrap();
-        right_distance = right_handle.join().unwrap().unwrap();
-    } else {
-        left_distance = closest_pair_helper(&left_h, &left_v, in_parallel).unwrap();
-        right_distance = closest_pair_helper(&right_h, &right_v, in_parallel).unwrap();
-    }
+//        left_distance = closest_pair_helper(cluster_list, &left_index_h, &left_index_v, in_parallel).unwrap();
+//        right_distance = right_handle.join().unwrap().unwrap();
+//    } else {
+        left_distance = closest_pair_helper(cluster_list, &left_index_h, &left_index_v, in_parallel).unwrap();
+        right_distance = closest_pair_helper(cluster_list, &right_index_h, &right_index_v, in_parallel).unwrap();
+//    }
 
     // find the min distance from left and right
     let mut min_distance;
@@ -115,9 +126,9 @@ fn closest_pair_helper(cluster_list_x: &Vec<Cluster>,
 
     // find the points in the strip
     let mut s = Vec::new();
-    for c in cluster_list_y {
-        if (c.horiz_center() - mid).abs() < min_distance.0 {
-            s.push(c.clone());
+    for &i in cluster_list_index_y {
+        if (cluster_list[i].horiz_center() - mid).abs() < min_distance.0 {
+            s.push(i);
         }
     }
 
@@ -126,13 +137,15 @@ fn closest_pair_helper(cluster_list_x: &Vec<Cluster>,
     if k > 2 {
         for u in 0 .. k - 2 {
             for v in u + 1 .. cmp::min(u + 3, k - 1) {
-                let distance = s[u].distance(&s[v]);
+                let distance = cluster_list[s[u]].distance(&cluster_list[s[v]]);
                 if distance < min_distance.0 {
-                    min_distance = (distance, 0, 0);
+                    min_distance = (distance, s[u], s[v]);
                 }
             }
          }
     }
+
+    println!("find min done: {}", cluster_list_index_x.len());
 
     Some(min_distance)
 }
