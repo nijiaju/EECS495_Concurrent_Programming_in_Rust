@@ -1,3 +1,5 @@
+extern crate time;
+
 use cluster::Cluster;
 use std::{cmp, f64};
 use std::thread;
@@ -28,19 +30,33 @@ pub fn bf_closest_pair(cluster_list: &Vec<Cluster>) -> Option<(f64, usize, usize
 }
 
 pub fn paral_closest_pair(cluster_list: &Vec<Cluster>)
-       -> Option<(f64, usize, usize)> {
-    
+    -> Option<(f64, usize, usize)> {
+    closest_pair(cluster_list, true)
+}
+
+pub fn serial_closest_pair(cluster_list: &Vec<Cluster>)
+    -> Option<(f64, usize, usize)> {
+    closest_pair(cluster_list, false)
+}
+
+fn closest_pair(cluster_list: &Vec<Cluster>, in_parallel: bool)
+    -> Option<(f64, usize, usize)> {
+
+//    let start_time = time::now();
     let mut cluster_list_sorted_x = cluster_list.clone();
     cluster_list_sorted_x.sort_by(|a, b| a.cmp_x(b));
     let mut cluster_list_sorted_y = cluster_list.clone();
     cluster_list_sorted_y.sort_by(|a, b| a.cmp_y(b));
+//    let end_time = time::now();
+//    println!("sort_time_cost: {}", end_time - start_time);
 
-    paral_closest_pair_helper(&cluster_list_sorted_x, &cluster_list_sorted_y)
+    closest_pair_helper(&cluster_list_sorted_x, &cluster_list_sorted_y, in_parallel)
 }
 
-fn paral_closest_pair_helper(cluster_list_x: &Vec<Cluster>,
-                             cluster_list_y: &Vec<Cluster>)
-   -> Option<(f64, usize, usize)> {
+fn closest_pair_helper(cluster_list_x: &Vec<Cluster>,
+                       cluster_list_y: &Vec<Cluster>,
+                       in_parallel: bool)
+    -> Option<(f64, usize, usize)> {
 
     // base case
     if cluster_list_x.len() <= 3 {
@@ -57,7 +73,7 @@ fn paral_closest_pair_helper(cluster_list_x: &Vec<Cluster>,
     let mut left_v = Vec::new();
     let mut right_h = Vec::new();
     let mut right_v = Vec::new();
-
+    
     for c in cluster_list_x {
         if c.horiz_center() < mid {
             left_h.push(c.clone());
@@ -73,14 +89,22 @@ fn paral_closest_pair_helper(cluster_list_x: &Vec<Cluster>,
         }
     }
 
-    // spwan a thread to solve the sub-problem independently
-    let right_handle = thread::spawn(move || {
-        paral_closest_pair_helper(&right_h, &right_v)
-    });
+    let left_distance;
+    let right_distance;
 
-    let left_distance = paral_closest_pair_helper(&left_h, &left_v).unwrap();
-    let right_distance = right_handle.join().unwrap().unwrap();
-    
+    if in_parallel && right_h.len() > 256 {
+        // spwan a thread to solve the sub-problem independently
+        let right_handle = thread::spawn(move || {
+            closest_pair_helper(&right_h, &right_v, in_parallel)
+        });
+
+        left_distance = closest_pair_helper(&left_h, &left_v, in_parallel).unwrap();
+        right_distance = right_handle.join().unwrap().unwrap();
+    } else {
+        left_distance = closest_pair_helper(&left_h, &left_v, in_parallel).unwrap();
+        right_distance = closest_pair_helper(&right_h, &right_v, in_parallel).unwrap();
+    }
+
     // find the min distance from left and right
     let mut min_distance;
     if left_distance.0 < right_distance.0 {
@@ -88,7 +112,7 @@ fn paral_closest_pair_helper(cluster_list_x: &Vec<Cluster>,
     } else {
         min_distance = right_distance;
     }
-    
+
     // find the points in the strip
     let mut s = Vec::new();
     for c in cluster_list_y {
@@ -107,7 +131,7 @@ fn paral_closest_pair_helper(cluster_list_x: &Vec<Cluster>,
                     min_distance = (distance, 0, 0);
                 }
             }
-        }
+         }
     }
 
     Some(min_distance)

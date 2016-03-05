@@ -44,9 +44,9 @@ impl Cluster {
 
     pub fn cmp_x(&self, other_cluster: &Self) -> Ordering {
 
-        if (self.horiz_center < other_cluster.horiz_center()) {
+        if self.horiz_center < other_cluster.horiz_center() {
             Ordering::Less
-        } else if (self.horiz_center == other_cluster.horiz_center()) {
+        } else if self.horiz_center == other_cluster.horiz_center() {
             Ordering::Equal
         } else {
             Ordering::Greater
@@ -57,9 +57,9 @@ impl Cluster {
     }
 
     pub fn cmp_y(&self, other_cluster: &Self) -> Ordering {
-        if (self.vert_center < other_cluster.vert_center()) {
+        if self.vert_center < other_cluster.vert_center() {
             Ordering::Less
-        } else if (self.vert_center == other_cluster.vert_center()) {
+        } else if self.vert_center == other_cluster.vert_center() {
             Ordering::Equal
         } else {
             Ordering::Greater
