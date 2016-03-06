@@ -72,7 +72,11 @@ fn closest_pair_helper(cluster_list: &Vec<Cluster>,
 
     // base case
     if cluster_list_index_x.len() <= 3 {
-        return bf_closest_pair(cluster_list);
+        let mut cluster_list_: Vec<Cluster> = Vec::new();
+        for &i in cluster_list_index_x {
+            cluster_list_.push(cluster_list[i].clone());
+        }
+        return bf_closest_pair(&cluster_list_);
     }
 
     let m: usize = cluster_list_index_x.len() / 2;
@@ -144,8 +148,6 @@ fn closest_pair_helper(cluster_list: &Vec<Cluster>,
             }
          }
     }
-
-    println!("find min done: {}", cluster_list_index_x.len());
 
     Some(min_distance)
 }
