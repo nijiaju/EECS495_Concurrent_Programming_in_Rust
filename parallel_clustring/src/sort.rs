@@ -1,19 +1,14 @@
 use cluster::Cluster;
+use std::sync::Arc;
 
 // do not mutate the original vector, return a new sorted vector
 // with indices in it.
-pub fn merge_sort (cluster_list: &Vec<Cluster>, sort_by_x: bool) -> Vec<usize> {
-    let mut cluster_list_index: Vec<usize> = Vec::new();
-    for i in 0 .. cluster_list.len() {
-        cluster_list_index.push(i);
-    }
-    merge_sort_helper(cluster_list, sort_by_x, &cluster_list_index, 0, cluster_list_index.len())
+pub fn merge_sort (cluster_list: Arc<Vec<Cluster>>, sort_by_x: bool) -> Vec<usize> {
+    merge_sort_helper(cluster_list.clone(), sort_by_x, 0, cluster_list.len())
 }
 
-fn merge_sort_helper(cluster_list: &Vec<Cluster>,
-                     sort_by_x: bool,
-                     cluster_list_index: &Vec<usize>,
-                     start: usize, end: usize)
+fn merge_sort_helper(cluster_list: Arc<Vec<Cluster>>,
+                     sort_by_x: bool, start: usize, end: usize)
 -> Vec<usize> {
     //base case
     if end - start == 1 {
@@ -21,8 +16,8 @@ fn merge_sort_helper(cluster_list: &Vec<Cluster>,
     }
 
     let mid: usize = start + (end - start) / 2;
-    let left = merge_sort_helper(cluster_list, sort_by_x, cluster_list_index, start, mid);
-    let right = merge_sort_helper(cluster_list, sort_by_x, cluster_list_index, mid, end);
+    let left = merge_sort_helper(cluster_list.clone(), sort_by_x, start, mid);
+    let right = merge_sort_helper(cluster_list.clone(), sort_by_x, mid, end);
 
     let mut left_index: usize = 0;
     let mut right_index: usize = 0;

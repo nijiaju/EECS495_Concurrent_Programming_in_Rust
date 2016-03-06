@@ -16,27 +16,27 @@ fn main() {
     //let mut cluster_list = read_cluster_list("../unifiedCancerData_111.csv".to_owned());
     //let mut cluster_list = read_cluster_list("../unifiedCancerData_290.csv".to_owned());
     //let mut cluster_list = read_cluster_list("../unifiedCancerData_896.csv".to_owned());
-    //let mut cluster_list = read_cluster_list("../unifiedCancerData_3108.csv".to_owned());
-    let mut cluster_list = random_cluster_list_generator(10000);
+    let mut cluster_list = read_cluster_list("../unifiedCancerData_3108.csv".to_owned());
+    //let mut cluster_list: Vec<Cluster> = random_cluster_list_generator(10000);
     println!("read data length: {}", cluster_list.len());
-    //let data = Arc::new(cluster_list);
+    let cluster_list = Arc::new(cluster_list);
     {
         let start_time = time::now();
-        let min_distance1 = closest_pair::bf_closest_pair(&cluster_list);
+        let min_distance1 = closest_pair::bf_closest_pair(cluster_list.clone());
         let stop_time = time::now();
         println!("min distance1: {:?}", min_distance1);
         println!("{}", stop_time - start_time);
     }
     {
         let start_time = time::now();
-        let min_distance2 = closest_pair::serial_closest_pair(&cluster_list);
+        let min_distance2 = closest_pair::serial_closest_pair(cluster_list.clone());
         let stop_time = time::now();
         println!("min distance2: {:?}", min_distance2);
         println!("{}", stop_time - start_time);
     }
     {
         let start_time = time::now();
-        let min_distance3 = closest_pair::paral_closest_pair(&cluster_list);
+        let min_distance3 = closest_pair::paral_closest_pair(cluster_list.clone());
         let stop_time = time::now();
         println!("min distance2: {:?}", min_distance3);
         println!("{}", stop_time - start_time);
