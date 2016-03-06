@@ -31,6 +31,29 @@ pub fn bf_closest_pair(cluster_list: Arc<Vec<Cluster>>) -> Option<(f64, usize, u
     Some(min_distance)
 }
 
+fn bf_closest_pair_for_paral(cluster_list: Arc<Vec<Cluster>>,
+                             cluster_list_index: Vec<usize>)
+    -> Option<(f64, usize, usize)> {
+    if cluster_list_index.len() < 2 {
+        return None;
+    }
+
+    let mut min_distance = (f64::INFINITY, usize::max_value(), usize::max_value());
+
+    for i in 0 .. cluster_list_index.len() {
+        for j in i + 1 .. cluster_list_index.len() {
+            let distance = pair_distance(cluster_list.clone(),
+                                         cluster_list_index[i],
+                                         cluster_list_index[j]);
+            if distance.0 < min_distance.0 {
+                min_distance = distance;
+            }
+        }
+    }
+
+    Some(min_distance)
+}
+
 pub fn paral_closest_pair(cluster_list: Arc<Vec<Cluster>>)
     -> Option<(f64, usize, usize)> {
     closest_pair(cluster_list, true)
@@ -53,7 +76,9 @@ fn closest_pair(cluster_list: Arc<Vec<Cluster>>, in_parallel: bool)
 //    println!("sort_time_cost: {}", end_time - start_time);
     
     let start_time = time::now();
+    // sort by x
     let cluster_list_index_h = merge_sort(cluster_list.clone(), true, in_parallel);
+    // sort by y
     let cluster_list_index_v = merge_sort(cluster_list.clone(), false, in_parallel);
     let end_time = time::now();
     println!("sort_time_cost: {}", end_time - start_time);
@@ -72,11 +97,7 @@ fn closest_pair_helper(cluster_list: Arc<Vec<Cluster>>,
 
     // base case
     if cluster_list_index_x.len() <= 3 {
-        let mut cluster_list_: Vec<Cluster> = Vec::new();
-        for &i in &cluster_list_index_x {
-            cluster_list_.push(cluster_list[i].clone());
-        }
-        return bf_closest_pair(Arc::new(cluster_list_));
+        return bf_closest_pair_for_paral(cluster_list, cluster_list_index_x);
     }
 
     let m: usize = cluster_list_index_x.len() / 2;
@@ -140,12 +161,12 @@ fn closest_pair_helper(cluster_list: Arc<Vec<Cluster>>,
 
     // find the minmum distance
     let k = s.len();
-    if k > 2 {
+    if k >= 2 {
         for u in 0 .. k - 2 {
             for v in u + 1 .. cmp::min(u + 3, k - 1) {
                 let distance = cluster_list[s[u]].distance(&cluster_list[s[v]]);
                 if distance < min_distance.0 {
-                    min_distance = (distance, s[u], s[v]);
+                    min_distance = (distance, cmp::min(s[u], s[v]), cmp::max(s[u], s[v]));
                 }
             }
          }
