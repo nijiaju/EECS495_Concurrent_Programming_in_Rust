@@ -16,8 +16,8 @@ fn main() {
     //let mut cluster_list = read_cluster_list("../unifiedCancerData_111.csv".to_owned());
     //let mut cluster_list = read_cluster_list("../unifiedCancerData_290.csv".to_owned());
     //let mut cluster_list = read_cluster_list("../unifiedCancerData_896.csv".to_owned());
-    let mut cluster_list = read_cluster_list("../unifiedCancerData_3108.csv".to_owned());
-    //let mut cluster_list: Vec<Cluster> = random_cluster_list_generator(10000);
+    //let mut cluster_list = read_cluster_list("../unifiedCancerData_3108.csv".to_owned());
+    let mut cluster_list: Vec<Cluster> = random_cluster_list_generator(10000);
     println!("read data length: {}", cluster_list.len());
     let cluster_list = Arc::new(cluster_list);
     {
