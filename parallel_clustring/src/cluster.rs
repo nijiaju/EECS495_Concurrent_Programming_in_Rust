@@ -22,6 +22,7 @@ impl Cluster {
                 }
            }
 
+    #[allow(dead_code)]
     pub fn fips_codes(&self) -> &Vec<u64> {
         &self.fips_codes
     }
@@ -42,6 +43,9 @@ impl Cluster {
         self.averaged_risk
     }
 
+    // temporary allow dead code
+    // remove this after the parallal sort function takes a lambda expression
+    #[allow(dead_code)]
     pub fn cmp_x(&self, other_cluster: &Self) -> Ordering {
 
         if self.horiz_center < other_cluster.horiz_center() {
@@ -56,6 +60,9 @@ impl Cluster {
         //self.horiz_center.cmp(other_cluster.horiz_center())
     }
 
+    // temporary allow dead code
+    // remove this after the parallal sort function takes a lambda expression
+    #[allow(dead_code)]
     pub fn cmp_y(&self, other_cluster: &Self) -> Ordering {
         if self.vert_center < other_cluster.vert_center() {
             Ordering::Less

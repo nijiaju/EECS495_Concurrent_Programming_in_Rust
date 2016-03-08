@@ -81,7 +81,7 @@ fn closest_pair(cluster_list: Arc<Vec<Cluster>>, in_parallel: bool)
     // sort by y
     let cluster_list_index_v = merge_sort(cluster_list.clone(), false, in_parallel);
     let end_time = time::now();
-    println!("sort_time_cost: {}", end_time - start_time);
+    //println!("sort_time_cost: {}", end_time - start_time);
     
     closest_pair_helper(cluster_list,
                         cluster_list_index_h,
