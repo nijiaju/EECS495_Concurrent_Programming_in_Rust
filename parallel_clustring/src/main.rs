@@ -8,7 +8,7 @@ mod clustering;
 
 use std::fs::File;
 use std::io::{BufReader, BufRead, BufWriter, Write};
-//use std::sync::Arc;
+use std::sync::Arc;
 use cluster::Cluster;
 use clustering::{herarchical_clustering, RunningMode};
 
@@ -18,7 +18,7 @@ fn main() {
     //let cluster_list = read_cluster_list("unifiedCancerData_290.csv".to_owned());
     //let cluster_list = read_cluster_list("unifiedCancerData_896.csv".to_owned());
     let cluster_list = read_cluster_list("unifiedCancerData_3108.csv".to_owned());
-    //let cluster_list: Vec<Cluster> = random_cluster_list_generator(10000);
+    //let cluster_list: Vec<Cluster> = random_cluster_list_generator(25000);
 
     println!("read data length: {}", cluster_list.len());
     let result: Vec<Cluster> = 
@@ -31,6 +31,29 @@ fn main() {
     }
 
     //running_time_test(cluster_list);
+    //closest_pair_time_test(cluster_list);
+}
+
+fn closest_pair_time_test(cluster_list: Vec<Cluster>) {
+    let cluster_list_arc = Arc::new(cluster_list);
+
+    let start_time = time::now();
+    let result1 = closest_pair::bf_closest_pair(cluster_list_arc.clone());
+    let stop_time = time::now();
+    print!("{:?}", result1);
+    println!("Time: {}", stop_time - start_time);
+
+    let start_time = time::now();
+    let result2 = closest_pair::serial_closest_pair(cluster_list_arc.clone());
+    let stop_time = time::now();
+    print!("{:?}", result2);
+    println!("Time: {}", stop_time - start_time);
+
+    let start_time = time::now();
+    let result3 = closest_pair::paral_closest_pair(cluster_list_arc.clone());
+    let stop_time = time::now();
+    print!("{:?}", result3);
+    println!("Time: {}", stop_time - start_time);
 }
 
 fn running_time_test(cluster_list: Vec<Cluster>) {
