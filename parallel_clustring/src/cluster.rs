@@ -1,9 +1,11 @@
 use std::fmt;
 use std::cmp::Ordering;
+use std::fs::File;
+use std::io::BufWriter;
 
 #[derive(Debug, Clone)]
 pub struct Cluster {
-    fips_codes:         Vec<u64>,
+    fips_codes:         Vec<String>,
     horiz_center:       f64,
     vert_center:        f64,
     total_population:   u64,
@@ -11,7 +13,7 @@ pub struct Cluster {
 }
 
 impl Cluster {
-    pub fn new(fips: u64, horiz: f64, vert: f64, population: u64, risk: f64)
+    pub fn new(fips: String, horiz: f64, vert: f64, population: u64, risk: f64)
            -> Self {
                Cluster {
                    fips_codes:          vec![fips],
@@ -23,7 +25,7 @@ impl Cluster {
            }
 
     #[allow(dead_code)]
-    pub fn fips_codes(&self) -> &Vec<u64> {
+    pub fn fips_codes(&self) -> &Vec<String> {
         &self.fips_codes
     }
 
@@ -108,8 +110,11 @@ impl fmt::Display for Cluster {
         let mut codes = String::new();
         for code in &self.fips_codes {
             codes.push_str(&code.to_string());
+            codes.push(' ');
         }
-        write!(f, "cluster: {}\ncenter: ({}, {})\n",
-               codes, self.horiz_center, self.vert_center)
+        codes.pop();
+        write!(f, "{}\n{} {} {} {}\n",
+               codes, self.horiz_center, self.vert_center,
+               self.total_population, self.averaged_risk)
     }
 }

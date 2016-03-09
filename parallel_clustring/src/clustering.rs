@@ -13,7 +13,7 @@ pub fn herarchical_clustering(mut cluster_list: Vec<Cluster>, k: usize, t: Runni
     let mut cluster_list_arc: Arc<Vec<Cluster>> = Arc::new(cluster_list);
 
     while cluster_list_arc.len() > k {
-        // println!("{}", cluster_list_arc.len());
+        //println!("{}", cluster_list_arc.len());
         let min_distance = match t {
             RunningMode::BruteForce =>
                 bf_closest_pair(cluster_list_arc.clone()).unwrap(),
